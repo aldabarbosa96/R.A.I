@@ -1,7 +1,8 @@
 from core.engine import EvolutionEngine
-from scenarios.simple_maximization import SimpleMaximizationScenario
+from scenarios.scenarios_manager import ScenarioManager
 
 if __name__ == "__main__":
-    scenario = SimpleMaximizationScenario()
-    engine = EvolutionEngine(scenario=scenario)
+    scenario_name = "dictionary_scenario"  # Activamos el nuevo escenario
+    scenario = ScenarioManager.get_scenario(scenario_name)
+    engine = EvolutionEngine(scenario=scenario, population_size=100, generations=200)
     engine.run()
