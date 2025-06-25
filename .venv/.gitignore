@@ -1,0 +1,11 @@
+# Ignorar todo
+*
+
+# …excepto lo que sí quiero:
+!/.gitignore
+!/src/
+!/README.md
+
+# Y dentro de src, vuelve a ignorar binarios si hiciera falta
+src/*.pkl
+src/__pycache__/

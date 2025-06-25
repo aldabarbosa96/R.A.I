@@ -1,54 +1,65 @@
 # ================================================================
-# FILE: src/main.py   (sin YAML, todo en este archivo)
+# FILE: src/main.py   (configuración en un único bloque CONFIG)
 # ================================================================
 """
-Ejemplo de ejecución directa del motor evolutivo sin depender
-de configuraciones externas.  Modifica las constantes de la
-sección CONFIG para probar distintos escenarios o parámetros.
+Ejecución directa del motor evolutivo SIN archivos YAML.
+
+– Modifica el diccionario CONFIG para probar distintos escenarios
+  y parámetros del motor.
+– El archivo ScenarioManager ya sabe leer las claves que necesite
+  cada escenario (order, length, target_word, …).
 """
 
+from pathlib import Path  # sólo para mensajes de control opcionales
 from core.engine import EvolutionEngine
 from scenarios.scenarios_manager import ScenarioManager
 
 # ------------------------- CONFIG ------------------------------- #
-CONFIG = dict(
-    # nombre del escenario disponible en scenarios_manager.py
-    #   • "language_fluency"  (fluidez con modelo n-gram simple)
-    #   • "ngram_fluency"     (fluidez con bigramas-pickle)
-    #   • "target_sentence"   (evoluciona hasta una frase fija)
-    #   • "dictionary_scenario", "language_adaptive", etc.
-    scenario="language_fluency",
+CONFIG: dict = {
+    # ─ Escenario a ejecutar ───────────────────────────────────── #
+    #   • "language_fluency"
+    #   • "ngram_fluency"
+    #   • "target_sentence"
+    #   • "dictionary_scenario"
+    #   • "language_adaptive", "simple_maximization", ...
+    "scenario": "language_fluency",
 
-    # parámetros ESPECÍFICOS del escenario (solo si lo usa)
-    length=40,      # para language_fluency / ngram_fluency
-    order=2,        # solo para ngram_fluency
+    # ─ Parámetros del escenario (solo si aplica) ─────────────── #
+    "length": 40,  # language_/ngram_fluency
+    "order": 2,  # ngram_fluency (2=bigramas, 3=trigramas…)
+    "target_word": "HOUSE",  # dictionary_scenario
 
-    # parámetros del motor
-    population_size=600,
-    generations=4000,
-    stagnation_patience=400,
+    # ─ Parámetros del motor evolutivo ────────────────────────── #
+    "population_size": 600,
+    "generations": 4000,
+    "stagnation_patience": 400,
 
-    # mutación adaptativa
-    base_mutation_rate=0.05,
-    low_diversity_factor=0.20,
-    high_diversity_factor=0.45,
-    anneal_factor=0.998,
-    micro_threshold=5,
-    micro_mutation_rate=0.30,
-)
+    # Mutación adaptativa
+    "base_mutation_rate": 0.05,
+    "low_diversity_factor": 0.20,
+    "high_diversity_factor": 0.45,
+    "anneal_factor": 0.998,
+
+    # Micro-mutación focalizada
+    "micro_threshold": 5,
+    "micro_mutation_rate": 0.30,
+}
+
+
 # ---------------------------------------------------------------- #
 
 
-def main():
-    # instancia el escenario
+def main() -> None:
+    """Punto de entrada principal."""
+    # 1. Instanciar el escenario adecuado
     scenario = ScenarioManager.get_scenario(CONFIG["scenario"], CONFIG)
 
-    # caso especial: cambiar la frase objetivo de target_sentence
+    # «Hack» opcional: cambiar la frase objetivo al vuelo
     if CONFIG["scenario"] == "target_sentence" and "target_sentence" in CONFIG:
-        scenario.target_sentence = CONFIG["target_sentence"]
+        scenario.target_sentence = CONFIG["target_sentence"].upper()
         scenario.gene_length = len(scenario.target_sentence)
 
-    # lanza el motor
+    # 2. Crear el motor evolutivo con los parámetros de CONFIG
     engine = EvolutionEngine(
         scenario=scenario,
         population_size=CONFIG["population_size"],
@@ -61,6 +72,8 @@ def main():
         micro_threshold=CONFIG["micro_threshold"],
         micro_mutation_rate=CONFIG["micro_mutation_rate"],
     )
+
+    # 3. ¡A rodar!
     engine.run()
 
 
