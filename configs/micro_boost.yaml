@@ -1,0 +1,4 @@
+inherit: default
+
+micro_threshold: 5
+micro_mutation_rate: 0.30

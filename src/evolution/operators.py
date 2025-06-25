@@ -7,6 +7,9 @@ class EvolutionOperators:
     def __init__(self):
         self.charset = string.ascii_uppercase + " "
 
+    # -------------------------------------------------- #
+    # Selección por torneo
+    # -------------------------------------------------- #
     def select(self, population, tournament_size=3):
         selected = []
         for _ in range(len(population)):
@@ -15,12 +18,15 @@ class EvolutionOperators:
             selected.append(copy.deepcopy(winner))
         return selected
 
+    # -------------------------------------------------- #
+    # Crossover uniforme / aritmético
+    # -------------------------------------------------- #
     def crossover(self, parent1, parent2):
         child_genes = []
 
         for g1, g2 in zip(parent1.genes, parent2.genes):
             if isinstance(g1, str):
-                # Mejora: favorecer conservación de genes correctos
+                # Favorecemos conservación de genes correctos
                 if random.random() < 0.9:
                     gene = g1 if random.random() < 0.5 else g2
                 else:
@@ -33,8 +39,25 @@ class EvolutionOperators:
 
         return child_genes
 
-    def mutate(self, individual, mutation_rate=0.05, mutation_sigma=0.1):
-        for i in range(len(individual.genes)):
+    # -------------------------------------------------- #
+    # Mutación
+    # -------------------------------------------------- #
+    def mutate(
+            self,
+            individual,
+            mutation_rate: float = 0.05,
+            mutation_sigma: float = 0.1,
+            incorrect_positions=None,
+    ):
+        """
+        Si `incorrect_positions` es una lista/iterable de índices, se mutan
+        **sólo** esas posiciones.  Si es None, se muta todo el genoma.
+        """
+        positions = (
+            incorrect_positions if incorrect_positions is not None else range(len(individual.genes))
+        )
+
+        for i in positions:
             if random.random() < mutation_rate:
                 if isinstance(individual.genes[i], str):
                     individual.genes[i] = random.choice(self.charset)
