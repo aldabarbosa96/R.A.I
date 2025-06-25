@@ -1,80 +1,78 @@
-# ================================================================
-# FILE: src/main.py   (configuración en un único bloque CONFIG)
-# ================================================================
 """
-Ejecución directa del motor evolutivo SIN archivos YAML.
+main.py · Lanzador del GA word-level (GAWord)
 
-– Modifica el diccionario CONFIG para probar distintos escenarios
-  y parámetros del motor.
-– El archivo ScenarioManager ya sabe leer las claves que necesite
-  cada escenario (order, length, target_word, …).
+Ejecución básica:
+    python -m src.main                          # usa parámetros por defecto
+Ejemplo con overrides:
+    python -m src.main --pop-size 400 --max-gens 5000
 """
+from __future__ import annotations
 
-from pathlib import Path  # sólo para mensajes de control opcionales
-from core.engine import EvolutionEngine
-from scenarios.scenarios_manager import ScenarioManager
+import argparse
+from datetime      import datetime
+from pathlib       import Path
+from typing        import Sequence
 
-# ------------------------- CONFIG ------------------------------- #
-CONFIG: dict = {
-    # ─ Escenario a ejecutar ───────────────────────────────────── #
-    #   • "language_fluency"
-    #   • "ngram_fluency"
-    #   • "target_sentence"
-    #   • "dictionary_scenario"
-    #   • "language_adaptive", "simple_maximization", ...
-    "scenario": "language_fluency",
-
-    # ─ Parámetros del escenario (solo si aplica) ─────────────── #
-    "length": 40,  # language_/ngram_fluency
-    "order": 2,  # ngram_fluency (2=bigramas, 3=trigramas…)
-    "target_word": "HOUSE",  # dictionary_scenario
-
-    # ─ Parámetros del motor evolutivo ────────────────────────── #
-    "population_size": 600,
-    "generations": 4000,
-    "stagnation_patience": 400,
-
-    # Mutación adaptativa
-    "base_mutation_rate": 0.05,
-    "low_diversity_factor": 0.20,
-    "high_diversity_factor": 0.45,
-    "anneal_factor": 0.998,
-
-    # Micro-mutación focalizada
-    "micro_threshold": 5,
-    "micro_mutation_rate": 0.30,
-}
+from ga_word import GAWord         # el GA que acabamos de ajustar
+from vocab   import decode         # utilidades ids→texto
 
 
-# ---------------------------------------------------------------- #
+# ───────────────────────────────────────────
+# CLI
+# ───────────────────────────────────────────
+def _parse_args() -> argparse.Namespace:
+    p = argparse.ArgumentParser(description="GA a nivel palabra")
+    p.add_argument("--pop-size", type=int, default=300,
+                   help="Tamaño de la población")
+    p.add_argument("--max-gens", type=int, default=2_000,
+                   help="Número máximo de generaciones")
+    p.add_argument("--runs-dir", type=str,  default="runs",
+                   help="Carpeta donde guardar los CSV de métricas")
+    return p.parse_args()
 
 
+# ───────────────────────────────────────────
+# Helpers
+# ───────────────────────────────────────────
+def _to_str(candidate: str | Sequence[int]) -> str:
+    """Normaliza posible lista de ids → string legible."""
+    if isinstance(candidate, str):
+        return candidate
+    return decode(candidate, skip_special=True)
+
+
+def _save_metrics(path: Path, rows: list[tuple[int, float, str]]):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as fh:
+        fh.write("generation,fitness,best\n")
+        for gen, fit, best in rows:
+            fh.write(f"{gen},{fit},{best}\n")
+
+
+# ───────────────────────────────────────────
+# Programa principal
+# ───────────────────────────────────────────
 def main() -> None:
-    """Punto de entrada principal."""
-    # 1. Instanciar el escenario adecuado
-    scenario = ScenarioManager.get_scenario(CONFIG["scenario"], CONFIG)
+    args = _parse_args()
 
-    # «Hack» opcional: cambiar la frase objetivo al vuelo
-    if CONFIG["scenario"] == "target_sentence" and "target_sentence" in CONFIG:
-        scenario.target_sentence = CONFIG["target_sentence"].upper()
-        scenario.gene_length = len(scenario.target_sentence)
-
-    # 2. Crear el motor evolutivo con los parámetros de CONFIG
-    engine = EvolutionEngine(
-        scenario=scenario,
-        population_size=CONFIG["population_size"],
-        generations=CONFIG["generations"],
-        stagnation_patience=CONFIG["stagnation_patience"],
-        base_mutation_rate=CONFIG["base_mutation_rate"],
-        low_diversity_factor=CONFIG["low_diversity_factor"],
-        high_diversity_factor=CONFIG["high_diversity_factor"],
-        anneal_factor=CONFIG["anneal_factor"],
-        micro_threshold=CONFIG["micro_threshold"],
-        micro_mutation_rate=CONFIG["micro_mutation_rate"],
+    ga = GAWord(
+        pop_size   = args.pop_size,
+        max_gens   = args.max_gens,
+        runs_dir   = args.runs_dir,
     )
 
-    # 3. ¡A rodar!
-    engine.run()
+    history: list[tuple[int, float, str]] = []
+
+    for gen, fit, best in ga.run():
+        best_str = _to_str(best)
+        print(f"Gen {gen:<4d} · Mejor: {best_str} (fit={fit:.3f})")
+        history.append((gen, fit, best_str))
+
+    # guardar CSV
+    ts       = datetime.now().isoformat(timespec="seconds").replace(":", "-")
+    csv_path = Path(args.runs_dir) / f"{ts}_run_word.csv"
+    _save_metrics(csv_path, history)
+    print(f"\n📄 Métricas guardadas en «{csv_path.resolve()}»")
 
 
 if __name__ == "__main__":
