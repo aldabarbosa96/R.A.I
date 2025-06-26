@@ -12,7 +12,7 @@ from typing import List, Dict
 # Configuración
 # ─────────────────────────────────────────────────────────────
 VOCAB_SIZE = 50_000  # cambia lo que necesites
-_CACHE_DIR = Path(__file__).resolve().parent / ".." / "data"
+_CACHE_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 _CACHE_DIR.mkdir(parents=True, exist_ok=True)
 _CACHE_FILE = _CACHE_DIR / f"vocab_es_{VOCAB_SIZE}.pkl"
 

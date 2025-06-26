@@ -1,6 +1,6 @@
 import random
 import string
-from scenarios.base_scenario import Scenario
+from .base_scenario import Scenario
 
 
 class LanguageAdaptiveScenario(Scenario):

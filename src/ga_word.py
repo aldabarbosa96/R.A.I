@@ -24,35 +24,40 @@ from collections import Counter
 
 # ───── terceros ──────────────────────────────────────────────────────
 from wordfreq import zipf_frequency
+
 try:
-    from colorama import Fore, Style;  Fore.OK = Fore.GREEN
-except Exception:                       # colorama no instalado
+    from colorama import Fore, Style;
+
+    Fore.OK = Fore.GREEN
+except Exception:  # colorama no instalado
     class _Dummy:
         RESET = OK = RED = CYAN = ""
-    Fore = Style = _Dummy()             # type: ignore
+
+
+    Fore = Style = _Dummy()  # type: ignore
 
 # ───── internos ──────────────────────────────────────────────────────
-import vocab  # tu módulo recién creado
-
+from src import vocab
 # ─────────────────────────────────────────────────────────────────────
 # Parámetros por defecto (pueden sobre-escribirse al instanciar GAWord)
 # ─────────────────────────────────────────────────────────────────────
-DEF_POP_SIZE   = 300
-DEF_MAX_GENS   = 10_000
+DEF_POP_SIZE = 300
+DEF_MAX_GENS = 10_000
 NO_IMPROVE_LIMIT = 400
 
-MUT_RATE = 0.025          # prob. de mutación por gen (≈ palabra)
-ELITISM  = 2              # nº individuos que pasan sin cambios
+MUT_RATE = 0.025  # prob. de mutación por gen (≈ palabra)
+ELITISM = 2  # nº individuos que pasan sin cambios
 
 # ─ Fitness ───────────────────────────────────────────────────────────
-LEN_PEN_BASE   = 5        # Nº palabras a partir del cual empieza a penalizar
-LEN_PEN_ALPHA  = 1.10     # Factor exponencial de castigo
-WORD_BONUS     = 0.30     # Premio por palabra
+LEN_PEN_BASE = 5  # Nº palabras a partir del cual empieza a penalizar
+LEN_PEN_ALPHA = 1.10  # Factor exponencial de castigo
+WORD_BONUS = 0.30  # Premio por palabra
 WORD_BONUS_CAP = 6
-DUP_PENALTY    = 1.00     # Castigo lineal por duplicados
+DUP_PENALTY = 1.00  # Castigo lineal por duplicados
 
 # ─ Tipado ────────────────────────────────────────────────────────────
-Genome = List[int]        # secuencia de IDs (incl. BOS/EOS)
+Genome = List[int]  # secuencia de IDs (incl. BOS/EOS)
+
 
 # ═════════════════════════════════════════════════════════════════════
 #   UTILIDADES DE GENOMA
@@ -67,7 +72,7 @@ def _mutate(g: Genome) -> Genome:
     out = g[:]
 
     # sustitución
-    for i in range(1, len(out) - 1):           # saltamos BOS/EOS
+    for i in range(1, len(out) - 1):  # saltamos BOS/EOS
         if random.random() < MUT_RATE:
             out[i] = random.randrange(4, vocab.vocab_size())
 
@@ -119,7 +124,7 @@ def _fitness(g: Genome) -> float:
     fit += WORD_BONUS * min(n, WORD_BONUS_CAP)
 
     # 4) Penalización por duplicados
-    dup = n - len(cnt)          # apariciones extra
+    dup = n - len(cnt)  # apariciones extra
     fit -= DUP_PENALTY * dup
 
     return fit
@@ -149,12 +154,12 @@ class GAWord:
                  runs_dir: Path | str | None = None):
 
         # parámetros
-        self.pop_size  = pop_size
-        self.max_gens  = max_gens
+        self.pop_size = pop_size
+        self.max_gens = max_gens
 
         # población inicial
-        self.pop  : List[Genome] = [_random_genome() for _ in range(pop_size)]
-        self.fits : List[float]  = [_fitness(g)    for g in self.pop]
+        self.pop: List[Genome] = [_random_genome() for _ in range(pop_size)]
+        self.fits: List[float] = [_fitness(g) for g in self.pop]
 
         # carpeta y CSV de métricas
         runs_root = Path(runs_dir or Path(__file__).resolve().parent.parent / "runs")
@@ -225,7 +230,7 @@ class GAWord:
                 new_pop.append(child)
 
             # nueva generación
-            self.pop  = new_pop
+            self.pop = new_pop
             self.fits = [_fitness(g) for g in self.pop]
 
 
@@ -237,11 +242,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         prog="python -m ga_word",
         description="Algoritmo Genético para generar frases en castellano.")
 
-    p.add_argument("--pop-size",  type=int, default=DEF_POP_SIZE,
+    p.add_argument("--pop-size", type=int, default=DEF_POP_SIZE,
                    help=f"Población (def. {DEF_POP_SIZE})")
-    p.add_argument("--max-gens",  type=int, default=DEF_MAX_GENS,
+    p.add_argument("--max-gens", type=int, default=DEF_MAX_GENS,
                    help=f"Nº máximo de generaciones (def. {DEF_MAX_GENS})")
-    p.add_argument("--seed",      type=int, default=None,
+    p.add_argument("--seed", type=int, default=None,
                    help="Semilla RNG (para reproducibilidad)")
 
     return p.parse_args(argv)

@@ -1,12 +1,9 @@
-# ================================================================
-# FILE: src/core/engine.py
-# ================================================================
 import copy
 from typing import List, Tuple
 
-from evolution.operators import EvolutionOperators
-from models.individual import Individual
-from utils.run_logger import RunLogger
+from ..evolution.operators import EvolutionOperators
+from ..models.individual import Individual
+from ..utils.run_logger import RunLogger
 
 
 class EvolutionEngine:
@@ -101,9 +98,16 @@ class EvolutionEngine:
             div: int,
             μ: float,
     ):
+        # Construir representación de los genes
+        if all(isinstance(g, str) for g in best.genes):
+            genes_str = ''.join(best.genes)
+        else:
+            # Si son números, convertir la lista entera a string
+            genes_str = str(best.genes)
+
         print(
             f"Gen {gen:<4} "
-            f"- Mejor: {''.join(best.genes)} (fit={best.fitness:.3f}) "
+            f"- Mejor: {genes_str} (fit={best.fitness:.3f}) "
             f"- Avg {avg:.2f} "
             f"- Div {div:<3} "
             f"- μ {μ:.3f}"

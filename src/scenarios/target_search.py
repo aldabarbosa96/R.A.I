@@ -1,5 +1,5 @@
 import random
-from scenarios.base_scenario import Scenario
+from .base_scenario import Scenario
 
 
 class TargetSearchScenario(Scenario):

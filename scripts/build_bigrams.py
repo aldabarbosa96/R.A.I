@@ -2,7 +2,7 @@ import pickle, os
 from collections import Counter
 import nltk
 
-OUT_PATH = os.path.join("src", "data", "bigrams.pkl")
+OUT_PATH = os.path.join("data", "processed", "bigrams.pkl")
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ "
 
 

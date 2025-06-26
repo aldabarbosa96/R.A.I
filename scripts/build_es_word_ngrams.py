@@ -13,9 +13,10 @@ import argparse, pickle, re, sys
 from collections import Counter
 from pathlib import Path
 from itertools import tee
-from tqdm import tqdm   # pip install tqdm
+from tqdm import tqdm  # pip install tqdm
 
 TOKEN_RE = re.compile(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+")
+
 
 def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3) ..."
@@ -23,12 +24,15 @@ def pairwise(iterable):
     next(b, None)
     return zip(a, b)
 
+
 def iter_sentence_tokens(path):
-    with path.open(encoding="utf8") as fh:
+    # Soportar BOMs de Windows y caracteres raros
+    with path.open(encoding="utf-8-sig", errors="ignore") as fh:
         for line in fh:
             toks = TOKEN_RE.findall(line.lower())
             if toks:
                 yield toks
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -36,11 +40,11 @@ def main():
                     help="Archivos de texto plano en español")
     ap.add_argument("--min-count", type=int, default=1,
                     help="frecuencia mínima a guardar")
-    ap.add_argument("--out-dir", type=Path, required=True)
+    ap.add_argument("--out-dir", type=Path, default=Path("data/processed"), help="Directorio de salida (por defecto: data/processed)")
     args = ap.parse_args()
 
     if not args.files:
-        args.files = [Path("-")]      # leer STDIN
+        args.files = [Path("-")]  # leer STDIN
 
     unigrams, bigrams = Counter(), Counter()
 
@@ -54,12 +58,13 @@ def main():
     out_dir = args.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     with (out_dir / "es_unigrams.pkl").open("wb") as f:
-        pickle.dump({w:c for w,c in unigrams.items() if c>=args.min_count}, f)
+        pickle.dump({w: c for w, c in unigrams.items() if c >= args.min_count}, f)
     with (out_dir / "es_bigrams.pkl").open("wb") as f:
-        pickle.dump({bg:c for bg,c in bigrams.items() if c>=args.min_count}, f)
+        pickle.dump({bg: c for bg, c in bigrams.items() if c >= args.min_count}, f)
 
     print(f"📦 Guardados  {len(unigrams):,} unigramas  "
           f"y  {len(bigrams):,} bigramas  →  {out_dir}")
+
 
 if __name__ == "__main__":
     main()

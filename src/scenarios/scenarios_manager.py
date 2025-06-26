@@ -1,26 +1,20 @@
-# ================================================================
-#  FILE: src/scenarios/scenarios_manager.py
-# ================================================================
-from scenarios.simple_maximization import SimpleMaximizationScenario
-from scenarios.target_search        import TargetSearchScenario
-from scenarios.target_sentence      import TargetSentenceScenario
-from scenarios.language_adaptive    import LanguageAdaptiveScenario
-from scenarios.dictionary_scenario  import DictionaryScenario
-from scenarios.ngram_fluency        import NgramFluencyScenario
-from scenarios.language_fluency     import LanguageFluencyScenario
+from pathlib import Path
+
+from .simple_maximization import SimpleMaximizationScenario
+from .target_search import TargetSearchScenario
+from .target_sentence import TargetSentenceScenario
+from .language_adaptive import LanguageAdaptiveScenario
+from .dictionary_scenario import DictionaryScenario
+from .ngram_fluency import NgramFluencyScenario
+from .language_fluency import LanguageFluencyScenario
+from .language_adaptative_fluency import LanguageAdaptiveFluencyScenario
 
 
 class ScenarioManager:
-    """
-    Devuelve una instancia de escenario a partir de su nombre.
-
-    cfg: diccionario opcional con parámetros adicionales
-         (viene del YAML o de los defaults del main).
-    """
-
     @staticmethod
     def get_scenario(name: str, cfg: dict | None = None):
         cfg = cfg or {}
+        data_dir = Path(__file__).resolve().parents[2] / "data" / "processed"
 
         if name == "simple_maximization":
             return SimpleMaximizationScenario()
@@ -36,22 +30,33 @@ class ScenarioManager:
 
         elif name == "dictionary_scenario":
             return DictionaryScenario(
-                dictionary_file="data/words.txt",
+                dictionary_file=str(data_dir / "words.txt"),
                 target_word="WORLD",
             )
 
-        # --- escenarios basados en n-gramas --------------------- #
         elif name == "ngram_fluency":
             return NgramFluencyScenario(
-                order  = cfg.get("order", 2),
-                length = cfg.get("length", 30),
+                order=cfg.get("order", 2),
+                length=cfg.get("length", 30),
+                ngram_file=str(data_dir / "bigrams.pkl"),
             )
 
         elif name == "language_fluency":
             return LanguageFluencyScenario(
-                length = cfg.get("length", 40),
+                length=cfg.get("length", 40),
+                bigram_file=str(data_dir / "bigrams.pkl"),
             )
 
-        # --------------------------------------------------------- #
+        elif name == "language_adaptive_fluency":
+            # cfg["prompt"] → texto de usuario
+            prompt = cfg.get("prompt", "")
+            length = cfg.get("length", max(len(prompt), 40))
+            return LanguageAdaptiveFluencyScenario(
+                prompt=prompt,
+                length=length,
+                bigram_file=str(data_dir / "es_bigrams.pkl"),
+                unigram_file=str(data_dir / "es_unigrams.pkl"),
+            )
+
         else:
             raise ValueError(f"Scenario '{name}' not recognized.")
