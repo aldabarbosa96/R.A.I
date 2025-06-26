@@ -1,29 +1,30 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse
+import sys
 from pathlib import Path
 
-def main() -> None:
-    import sys
-    from src.ga_word import GAWord
+from src.ga_word import GAWord
+from src.vocab import decode  # para convertir IDs → palabra
 
-    p = argparse.ArgumentParser(
+def main() -> None:
+    parser = argparse.ArgumentParser(
         prog="rai",
         description="R.A.I. – Chat evolutivo word-level"
     )
-    p.add_argument(
+    parser.add_argument(
         "-p", "--pop-size",
         type=int,
         default=300,
         help="Tamaño de la población"
     )
-    p.add_argument(
+    parser.add_argument(
         "-g", "--max-gens",
         type=int,
         default=2000,
         help="Número máximo de generaciones"
     )
-    args = p.parse_args()
+    args = parser.parse_args()
 
     print("🗣️  Chat evolutivo word-level (ENTER sin texto para salir)\n")
 
@@ -33,23 +34,24 @@ def main() -> None:
             print("Adiós 👋")
             sys.exit(0)
 
-        # Instanciamos GAWord
+        # Instanciamos GAWord (sin prompt en constructor)
         ga = GAWord(
             pop_size=args.pop_size,
             max_gens=args.max_gens,
             runs_dir=Path("runs")
         )
 
-        # Ejecutamos toda la evolución y guardamos la última población
-        last_population = None
-        for population in ga.run():
-            last_population = population
+        # Si quieres que tu fitness tenga en cuenta el prompt,
+        # asegúrate de que GAWord use `self.prompt` dentro de _fitness().
+        ga.prompt = prompt  # opcional, si tu GAWord lo espera
 
-        # Sacamos el mejor de la última población por fitness
-        best = max(last_population, key=lambda ind: ind.fitness)
+        # Ejecutamos la evolución y guardamos el último genome
+        last_genome = None
+        for gen, best_fit, best_genome in ga.run():
+            last_genome = best_genome
 
-        # Generamos la respuesta uniendo palabras
-        response = " ".join(best.genes)
+        # Decodificamos IDs → palabras, saltando BOS/EOS
+        response = decode(last_genome, skip_special=True)
 
         print("Bot:", response, "\n")
 
